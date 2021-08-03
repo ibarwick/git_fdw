@@ -532,13 +532,12 @@ static TupleTableSlot *gitIterateForeignScan(ForeignScanState *node)
 	TupleTableSlot *slot = node->ss.ss_ScanTupleSlot;
 
 	git_oid oid;
-	git_commit *commit;
-	git_tree *commit_tree;
-	git_commit *commit_parent;
-	git_tree *commit_parent_tree;
-	git_diff *commit_diff;
-	git_diff_stats *commit_diff_stats;
-	bool commit_parent_needs_free = false;
+	git_commit *commit = NULL;
+	git_tree *commit_tree = NULL;
+	git_commit *commit_parent = NULL;
+	git_tree *commit_parent_tree = NULL;
+	git_diff *commit_diff = NULL;
+	git_diff_stats *commit_diff_stats = NULL;
 	int position;
 
 	/* libgit's output */
@@ -568,7 +567,6 @@ static TupleTableSlot *gitIterateForeignScan(ForeignScanState *node)
 
 		if (git_commit_parent(&commit_parent, commit, 0) == GIT_OK)
 		{
-			commit_parent_needs_free = true;
 			git_commit_tree(&commit_parent_tree, commit_parent);
 		}
 		else
@@ -593,7 +591,7 @@ static TupleTableSlot *gitIterateForeignScan(ForeignScanState *node)
 			git_diff_stats_free(commit_diff_stats);
 			git_diff_free(commit_diff);
 
-			if (commit_parent_needs_free)
+			if (commit_parent != NULL)
 			{
 				git_commit_free(commit_parent);
 			}
