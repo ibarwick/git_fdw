@@ -468,9 +468,10 @@ static void gitBeginForeignScan(ForeignScanState *node, int eflags)
 			error = git_remote_create_anonymous(&remote, festate->repo, festate->path);
 			if (error < 0)
 			{
-				ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
-								errmsg("Call to git_remote_create_anonymous failed"),
-								errdetail("Error code: %d", error)));
+				ereport(ERROR,
+						(errcode(ERRCODE_FDW_ERROR),
+						 errmsg("Call to git_remote_create_anonymous failed"),
+						 errdetail("Error code: %d", error)));
 			}
 		}
 
@@ -486,17 +487,19 @@ static void gitBeginForeignScan(ForeignScanState *node, int eflags)
 			);
 		if (error < 0)
 		{
-			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
-							errmsg("Call to git_remote_connect failed"),
-							errdetail("Error code: %d", error)));
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("Call to git_remote_connect failed"),
+					 errdetail("Error code: %d", error)));
 		}
 
 		error = git_remote_ls(&refs, &refs_len, remote);
 		if (error < 0)
 		{
-			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
-							errmsg("Call to git_remote_ls failed"),
-							errdetail("Error code: %d", error)));
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("Call to git_remote_ls failed"),
+					 errdetail("Error code: %d", error)));
 		}
 
 		for (i = 0; i < refs_len; i++)
@@ -522,7 +525,10 @@ static void gitBeginForeignScan(ForeignScanState *node, int eflags)
 	}
 	else
 	{
-		ereport(WARNING, (errcode(WARNING), errmsg("Repo is already initialized %p", festate->repo), errdetail("No details.")));
+		ereport(WARNING,
+				(errcode(WARNING),
+				 errmsg("Repo is already initialized %p", festate->repo),
+				 errdetail("No details.")));
 	}
 }
 
@@ -905,17 +911,19 @@ int walkRepository(const char *path,
 
 		if (error < 0)
 		{
-			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
-							errmsg("Call to git_remote_connect failed"),
-							errdetail("Error code: %d", error)));
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("Call to git_remote_connect failed"),
+					 errdetail("Error code: %d", error)));
 		}
 
 		error = git_remote_ls(&refs, &refs_len, remote);
 		if (error < 0)
 		{
-			ereport(ERROR, (errcode(ERRCODE_FDW_ERROR),
-							errmsg("Call to git_remote_ls failed"),
-							errdetail("Error code: %d", error)));
+			ereport(ERROR,
+					(errcode(ERRCODE_FDW_ERROR),
+					 errmsg("Call to git_remote_ls failed"),
+					 errdetail("Error code: %d", error)));
 		}
 
 		for (i = 0; i < refs_len; i++)
