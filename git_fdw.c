@@ -135,7 +135,7 @@ int walkRepository(const char *path,
                    void (*callback)(void *, callback_obj_t *));
 void try_count(void *callback_state, callback_obj_t *obj);
 void acquire_sample_rows_callback(void *callback_state, callback_obj_t *obj);
-int get_size(GitFdwPlanState *fdw_private);
+int get_size(GitFdwPlanState *fdw_private, RelOptInfo *baserel);
 
 Datum git_fdw_handler(PG_FUNCTION_ARGS)
 {
@@ -318,19 +318,34 @@ static void gitGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid for
 	gitGetOptions(foreigntableid, fdw_private, &fdw_private->options);
 
 	baserel->fdw_private = (void *)fdw_private;
-	baserel->rows = get_size(fdw_private);
+	baserel->rows = get_size(fdw_private, baserel);
 }
 
-int get_size(GitFdwPlanState *fdw_private)
+int get_size(GitFdwPlanState *fdw_private, RelOptInfo *baserel)
 {
-	try_count_walker_state_t try_count_walker_state = {0, 0};
+	/*
+	 * If the table has not yet been analyzed, we'll need to scan each commit,
+	 * which is extremely expensive.
+	 */
+	if (baserel->tuples == 0)
+	{
+		try_count_walker_state_t try_count_walker_state = {0, 0};
 
-	walkRepository(fdw_private->path,
-				   fdw_private->branch,
-				   fdw_private->git_search_path,
-				   &try_count_walker_state,
-				   try_count);
-	return try_count_walker_state.rows;
+		walkRepository(fdw_private->path,
+					   fdw_private->branch,
+					   fdw_private->git_search_path,
+					   &try_count_walker_state,
+					   try_count);
+		return try_count_walker_state.rows;
+	}
+
+	/*
+	 * Otherwise use the value retrieved in "pg_class.reltuples", which is free
+	 * (apart from the cost of occasional ANALYZE operations, which unless the
+	 * repository is experiencing unusual rates of change, shouldn't be required
+	 * very often.
+	 */
+	return baserel->tuples;
 }
 
 static void gitGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid)
@@ -341,7 +356,7 @@ static void gitGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid forei
 	List *coptions = NIL;
 	Path *path;
 
-	int size = get_size(fdw_private);
+	int size = get_size(fdw_private, baserel);
 	fdw_private->ntuples = size;
 	fdw_private->pages = size;
 
