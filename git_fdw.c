@@ -33,9 +33,6 @@
 #include "utils/rel.h"
 #include "utils/builtins.h"
 #include "utils/timestamp.h"
-#include "plan_state.h"
-#include "execution_state.h"
-#include "options.h"
 
 PG_MODULE_MAGIC;
 
@@ -67,6 +64,40 @@ typedef struct callback_obj
 	callback_type_t type;
 	void *data;
 } callback_obj_t;
+
+typedef struct GitFdwExecutionState
+{
+	char	   *path;
+	char	   *branch;
+	char	   *git_search_path;
+	List	   *options;
+	git_repository *repo;
+	int passes;
+	git_revwalk *walker;
+} GitFdwExecutionState;
+
+typedef struct GitFdwPlanState
+{
+	char	   *path;
+	char	   *branch;
+	char	   *git_search_path;
+	List	   *options;
+	BlockNumber pages;
+	double	    ntuples;
+} GitFdwPlanState;
+
+struct GitFdwOption {
+	const char *optname;
+	Oid         optcontext;
+};
+
+// Only allow setting the repository's path
+static const struct GitFdwOption valid_options[] = {
+	{"path",   ForeignTableRelationId},
+	{"branch", ForeignTableRelationId},
+	{"git_search_path", ForeignTableRelationId},
+	{NULL,     InvalidOid}
+};
 
 static void gitGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
 static void gitGetForeignPaths(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid);
