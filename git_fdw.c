@@ -314,7 +314,7 @@ void try_count(void *callback_state, callback_obj_t *obj)
 
 static void gitGetForeignRelSize(PlannerInfo *root, RelOptInfo *baserel, Oid foreigntableid)
 {
-	GitFdwPlanState *fdw_private = (GitFdwPlanState *)palloc(sizeof(GitFdwPlanState));
+	GitFdwPlanState *fdw_private = (GitFdwPlanState *)palloc0(sizeof(GitFdwPlanState));
 	gitGetOptions(foreigntableid, fdw_private, &fdw_private->options);
 
 	baserel->fdw_private = (void *)fdw_private;
@@ -432,7 +432,7 @@ static void gitBeginForeignScan(ForeignScanState *node, int eflags)
 	git_libgit2_init();
 	gitGetOptions(relationId, &state, &options);
 
-	festate = (GitFdwExecutionState *)palloc(sizeof(GitFdwExecutionState));
+	festate = (GitFdwExecutionState *)palloc0(sizeof(GitFdwExecutionState));
 	festate->path = state.path;
 	festate->branch = state.branch;
 	festate->git_search_path = state.git_search_path;
@@ -600,9 +600,8 @@ static TupleTableSlot *gitIterateForeignScan(ForeignScanState *node)
 		git_tree_free(commit_parent_tree);
 
 		/* Retrieve string-encoded SHA1 */
-		formatted_commit_id = (char *)palloc(SHA1_LENGTH + 1);
+		formatted_commit_id = (char *)palloc0(SHA1_LENGTH + 1);
 		git_oid_fmt(formatted_commit_id, commit_sha1);
-		formatted_commit_id[SHA1_LENGTH] = '\0';
 
 		sha1 = CStringGetDatum(cstring_to_text_with_len(formatted_commit_id, strlen(formatted_commit_id)));
 		message = CStringGetDatum(cstring_to_text_with_len(commit_message, strlen(commit_message)));
@@ -810,8 +809,8 @@ int gitAcquireSampleRowsFunc(Relation relation,
 	Assert(targrows > 0);
 
 	tupDesc = RelationGetDescr(relation);
-	values = (Datum *)palloc(tupDesc->natts * sizeof(Datum));
-	nulls = (bool *)palloc(tupDesc->natts * sizeof(bool));
+	values = (Datum *)palloc0(tupDesc->natts * sizeof(Datum));
+	nulls = (bool *)palloc0(tupDesc->natts * sizeof(bool));
 
 	gitGetOptions(RelationGetRelid(relation), &state, &other_options);
 
